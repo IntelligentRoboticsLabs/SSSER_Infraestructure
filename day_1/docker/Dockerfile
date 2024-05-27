@@ -1,142 +1,126 @@
 FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04 as system
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+# Copyright 2020-2023 Tiryoh<tiryoh@gmail.com>
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+# This Dockerfile is based on https://github.com/AtsushiSaito/docker-ubuntu-sweb
+# which is released under the Apache-2.0 license.
 
-# RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
+ARG TARGETPLATFORM
+LABEL maintainer="Tiryoh<tiryoh@gmail.com>"
 
-# built-in packages
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends software-properties-common curl apache2-utils \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        supervisor nginx sudo net-tools zenity xz-utils \
-        dbus-x11 x11-utils alsa-utils \
-        mesa-utils libgl1-mesa-dri \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
-# install debs error if combine together
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        xvfb x11vnc \
-        vim-tiny firefox fonts-ubuntu \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gpgconf gnupg gpg-agent \
-    && curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && (dpkg -i ./google-chrome-stable_current_amd64.deb || apt-get install -fy) \
-    && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add \
-    && rm google-chrome-stable_current_amd64.deb \
-    && rm -rf /var/lib/apt/lists/*
+SHELL ["/bin/bash", "-c"]
 
+# Upgrade OS
+RUN apt-get update -q && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
+    apt-get autoclean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
 
+# Install Ubuntu Mate desktop
+RUN apt-get update -q && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        ubuntu-mate-desktop && \
+    apt-get autoclean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
 
+# Add Package
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        tigervnc-standalone-server tigervnc-common \
+        supervisor wget curl gosu git sudo python3-pip tini \
+        build-essential vim sudo lsb-release locales \
+        bash-completion tzdata terminator \
+        dos2unix && \
+    apt-get autoclean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        lightdm \
-    && apt-get install -y \
-        lxde \
-    && apt-get install -y --no-install-recommends \
-        gtk2-engines-murrine gnome-themes-standard gtk2-engines-pixbuf gtk2-engines-murrine arc-theme \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
-# Additional packages require ~600MB
-# libreoffice  pinta language-pack-zh-hant language-pack-gnome-zh-hant firefox-locale-zh-hant libreoffice-l10n-zh-tw
+# noVNC and Websockify
+RUN git clone https://github.com/AtsushiSaito/noVNC.git -b add_clipboard_support /usr/lib/novnc
+RUN pip install git+https://github.com/novnc/websockify.git@v0.10.0
+RUN ln -s /usr/lib/novnc/vnc.html /usr/lib/novnc/index.html
 
-# tini to fix subreap
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends tini \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+# Set remote resize function enabled by default
+RUN sed -i "s/UI.initSetting('resize', 'off');/UI.initSetting('resize', 'remote');/g" /usr/lib/novnc/app/ui.js
 
-# ffmpeg
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ffmpeg \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir /usr/local/ffmpeg \
-    && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
+# Disable auto update and crash report
+RUN sed -i 's/Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
+RUN sed -i 's/enabled=1/enabled=0/g' /etc/default/apport
 
-# python library
-COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
-RUN apt-get update \
-    && dpkg-query -W -f='${Package}\n' > /tmp/a.txt \
-    && apt-get install -y python3-pip python3-dev build-essential \
-	&& python3 -m pip install setuptools wheel && python3 -m pip install -r /tmp/requirements.txt \
-    && ln -s /usr/bin/python3 /usr/local/bin/python \
-    && dpkg-query -W -f='${Package}\n' > /tmp/b.txt \
-    && apt-get remove -y `diff --changed-group-format='%>' --unchanged-group-format='' /tmp/a.txt /tmp/b.txt | xargs` \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.txt
+# Install Firefox
+RUN DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:mozillateam/ppa -y && \
+    echo 'Package: *' > /etc/apt/preferences.d/mozilla-firefox && \
+    echo 'Pin: release o=LP-PPA-mozillateam' >> /etc/apt/preferences.d/mozilla-firefox && \
+    echo 'Pin-Priority: 1001' >> /etc/apt/preferences.d/mozilla-firefox && \
+    apt-get update -q && \
+    apt-get install -y \
+    firefox && \
+    apt-get autoclean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
 
-# terminator
-RUN apt-get update \
-    && apt-get install -yq --no-install-recommends terminator \
-    && sudo apt-get purge -y tilix \
-    && apt-get autoclean -y \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+# Install VSCodium
+RUN wget https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
+    -O /usr/share/keyrings/vscodium-archive-keyring.asc && \
+    echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.asc ] https://paulcarroty.gitlab.io/vscodium-deb-rpm-repo/debs vscodium main' \
+    | tee /etc/apt/sources.list.d/vscodium.list && \
+    apt-get update -q && \
+    apt-get install -y codium && \
+    apt-get autoclean && \
+    apt-get autoremove && \
+    rm -rf /var/lib/apt/lists/*
 
-################################################################################
-# builder
-################################################################################
+# Install ROS
+ENV ROS_DISTRO humble
+# desktop or ros-base
+ARG INSTALL_PACKAGE=desktop
 
-FROM ubuntu:jammy-20230804 as builder
+RUN apt-get update -q && \
+    apt-get install -y curl gnupg2 lsb-release && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+    apt-get update -q && \
+    apt-get install -y ros-${ROS_DISTRO}-${INSTALL_PACKAGE} \
+    python3-argcomplete \
+    python3-colcon-common-extensions \
+    python3-rosdep python3-vcstool && \
+    rosdep init && \
+    rm -rf /var/lib/apt/lists/*
 
+RUN rosdep update
 
+# Install simulation package only on amd64
+# Not ready for arm64 for now (July 28th, 2020)
+# https://github.com/Tiryoh/docker-ros2-desktop-vnc/pull/56#issuecomment-1196359860
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
+    apt-get update -q && \
+    apt-get install -y \
+    ros-${ROS_DISTRO}-gazebo-ros-pkgs \
+    ros-${ROS_DISTRO}-ros-ign && \
+    rm -rf /var/lib/apt/lists/*; \
+    fi
 
+# Enable apt-get completion after running `apt-get update` in the container
+RUN rm /etc/apt/apt.conf.d/docker-clean
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates gnupg patch
+COPY ./entrypoint.sh /
+RUN dos2unix /entrypoint.sh
+ENTRYPOINT [ "/bin/bash", "-c", "/entrypoint.sh" ]
 
-# nodejs
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
-    && apt-get install -y nodejs
+ENV USER ubuntu
+ENV PASSWD ubuntu
 
-# yarn
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-    && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update \
-    && apt-get install -y yarn
-
-# build frontend
-COPY web /src/web
-RUN cd /src/web \
-    && yarn config set network-timeout 600000 \
-    && yarn \
-    && yarn build
-
-RUN sed -i 's#app/locale/#novnc/app/locale/#' /src/web/dist/static/novnc/app/ui.js
-
-
-
-################################################################################
-# merge
-################################################################################
-FROM system
-LABEL maintainer="fcwu.tw@gmail.com"
-
-COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
-COPY rootfs /
-RUN ln -sf /usr/local/lib/web/frontend/static/websockify /usr/local/lib/web/frontend/static/novnc/utils/websockify && \
-	chmod +x /usr/local/lib/web/frontend/static/websockify/run
-
-EXPOSE 80
-WORKDIR /root
-ENV HOME=/home/ubuntu \
-    SHELL=/bin/bash
-HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://127.0.0.1:6079/api/health
-ENTRYPOINT ["/startup.sh"]
