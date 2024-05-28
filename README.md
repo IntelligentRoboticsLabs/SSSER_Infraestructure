@@ -53,12 +53,12 @@ Navigate to the Docker directory and build the Docker image:
 cd ~/sigsoft/SSSER_Infraestructure/docker/
 docker buildx build --platform=linux/amd64 -t sigsoft:v1.0 .
 ```
-## 5. Run Docker image:
+### 5. Run Docker image:
 Run the Docker image using the provided script:
 ```
 ./run_docker.sh
 ```
-## 6. Access the Environment
+### 6. Access the Environment
 Open your browser and go to: http://localhost:6080/
 
 You should see the environment running:
@@ -66,13 +66,13 @@ You should see the environment running:
 ![Environment](images/environment.png)
 
 ## Professors
-## 8. Create an installation script
+### 8. Create an installation script
 Create a custom installation script with the necessary setup for your courses and place it inside the `installation_scripts` folder.
 
-## 9. Follow steps 4 to 7 again
+### 9. Follow steps 4 to 7 again
 Build the Docker image and run it as described in steps 4 to 7.
 
-## 10. Execute Your Script Inside the Docker
+### 10. Execute Your Script Inside the Docker
 Once the Docker container is running, open a terminal inside the container and execute your script:
 ```sh
 source /installation_scripts/your_script.sh
