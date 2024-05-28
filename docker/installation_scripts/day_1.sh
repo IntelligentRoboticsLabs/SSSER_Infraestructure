@@ -7,7 +7,7 @@ export pkg_dir=/home/ubuntu/ros2_ws
 sudo apt-get update
 sudo apt-get upgrade -y
 
-# Clone the repository with simulator
+# Clone the repository 
 git clone -b humble-devel https://github.com/fmrico/book_ros2.git
 
 # Change directory to the cloned repository
@@ -26,5 +26,10 @@ rosdep install --from-paths src --ignore-src -r -y
 # Compile the code
 colcon build --symlink-install
 
-# Source workspace after build
-source $pkg_dir/install/setup.bash
+# Run any additional commands or scripts as needed
+echo "source $pkg_dir/install/setup.bash" >> /home/ubuntu/.bashrc
+source /home/ubuntu/.bashrc
+
+echo "================================"
+echo "      DAY 1 INSTALLED       "
+echo "================================"
