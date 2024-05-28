@@ -65,6 +65,7 @@ EOF
 BASHRC_PATH=$HOME/.bashrc
 grep -F "source /opt/ros/$ROS_DISTRO/setup.bash" $BASHRC_PATH || echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> $BASHRC_PATH
 grep -F "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" $BASHRC_PATH || echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> $BASHRC_PATH
+grep -F "source /usr/share/gazebo/setup.bash" $BASHRC_PATH || echo "source /usr/share/gazebo/setup.bash" >> $BASHRC_PATH
 chown $USER:$USER $BASHRC_PATH
 
 # Fix rosdep permission
