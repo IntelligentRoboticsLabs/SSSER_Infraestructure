@@ -4,8 +4,8 @@
 export pkg_dir=/home/ubuntu/ros2_ws
 
 # Update the package list
-apt-get update
-apt-get upgrade -y
+sudo apt-get update
+sudo apt-get upgrade -y
 
 # Clone the repository with simulator
 git clone -b humble https://github.com/jmguerreroh/tiago_simulator.git $pkg_dir/src/tiago_simulator
