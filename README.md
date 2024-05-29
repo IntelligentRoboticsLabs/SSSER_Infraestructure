@@ -1,7 +1,8 @@
 # SIGSOFT Support for Summer/Winter Schools in Software Engineering
-
-
-## Prerequisites
+---
+## Instructors and Students
+---
+## Prerequisites:
 
 ### 1. Install Docker Desktop on Ubuntu
 
@@ -40,6 +41,17 @@ The nvidia-ctk command modifies the /etc/docker/daemon.json file on the host. Th
 ```sh 
 sudo systemctl restart docker
 ``` 
+
+- If you have an NVIDIA card in your system and it is configured with the proper drivers, you can execute the following command to switch between the integrated graphics card and the NVIDIA GPU:
+```sh 
+sudo prime-select nvidia
+``` 
+
+- After running prime-select, you will need to restart your system for the changes to take effect:
+```sh 
+sudo reboot
+``` 
+
 ## Docker infraestructure
 ### 3. Clone the Repository
 Create a directory for the SIGSOFT environment and clone the repository:
@@ -65,7 +77,10 @@ You should see the environment running:
 
 ![Environment](images/environment.png)
 
-## Professors
+---
+## Instructors
+---
+
 ### 8. Create an installation script
 Create a custom installation script with the necessary setup for your courses and place it inside the `installation_scripts` folder.
 
