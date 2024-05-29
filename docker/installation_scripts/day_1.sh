@@ -8,17 +8,11 @@ sudo apt-get update
 sudo apt-get upgrade -y
 
 # Clone the repository 
-git clone -b humble-devel https://github.com/fmrico/book_ros2.git
+cd $pkg_dir/src
+git clone -b solution https://github.com/SIGSOFT-Summer-Winter-School/Bump-and-Go-with-Behavior-Trees.git
 
 # Change directory to the cloned repository
-cd $pkg_dir/src/book_ros2
-
-for i in br2_*
-do
-  touch $i/COLCON_IGNORE
-done
-
-rm br2_bt_bumpgo/COLCON_IGNORE
+cd $pkg_dir/src/Bump-and-Go-with-Behavior-Tree
 
 cd $pkg_dir 
 rosdep install --from-paths src --ignore-src -r -y
