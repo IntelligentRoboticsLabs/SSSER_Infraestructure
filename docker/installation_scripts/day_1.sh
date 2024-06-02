@@ -9,7 +9,8 @@ sudo apt-get upgrade -y
 
 # Clone the repository 
 cd $pkg_dir/src
-git clone -b solution https://github.com/SIGSOFT-Summer-Winter-School/Bump-and-Go-with-Behavior-Trees.git
+git clone https://github.com/SIGSOFT-Summer-Winter-School/Bump-and-Go-with-Behavior-Trees.git
+git clone https://github.com/BehaviorTree/Groot.git
 
 # Change directory to the cloned repository
 cd $pkg_dir/src/Bump-and-Go-with-Behavior-Tree
